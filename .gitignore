@@ -1,0 +1,27 @@
+# Entornos virtuales
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+
+# Bases de datos SQLite de trabajo
+datos/*.db
+*.sqlite
+*.sqlite3
+
+# Reportes y salidas temporales generadas
+reportes/
+*.png
+*.pdf
+
+# Archivos de sistema / IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

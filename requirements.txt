@@ -1,0 +1,10 @@
+# requirements.txt
+# Versiones fijadas para compatibilidad y entorno reproducible
+flet==1.0.5
+flet-desktop==1.0.5
+numpy==2.5.4
+scipy==1.18.1
+matplotlib==3.11.2
+docxtpl==0.20.2
+python-docx==1.2.0
+pytest==9.2.0
