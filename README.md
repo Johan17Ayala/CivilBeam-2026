@@ -1,255 +1,240 @@
-# CivilBeam 2026: Análisis de Diagramas de Cortante, Momento y Deflexión en Vigas con Cargas Arbitrarias
+# CivilBeam 2026 — Análisis Estructural de Vigas y Diagramas de Solicitaciones
 
-**Universidad Distrital Francisco José de Caldas**  
-*Facultad Tecnológica — Proyecto Curricular de Ingeniería Civil*  
-*Espacio Académico: Programación II (Grupo 18) — Semestre 2026-III*  
-**Proyecto 02: Aplicación de Escritorio para Ingeniería Civil**  
-**Tema 01 (Estructuras):** *Diagramas de cortante, momento y deflexión en vigas con cargas arbitrarias*
+Aplicación de escritorio en Python (Flet Material 3) con núcleo numérico 100 % desacoplado de la interfaz gráfica para analizar vigas isostáticas, hiperestáticas y sobre apoyos elásticos bajo combinaciones normativas NSR-10, consultar el cálculo **paso a paso** y exportar memorias formales a **Microsoft Word (`.docx`)**.
 
 ---
 
-## 1. Descripción del Problema de Ingeniería Civil
+## 1. Introducción
 
-En el diseño y revisión estructural de obras civiles (puentes, vigas de entrepiso en edificación, cerchas, pasarelas peatonales y vigas carril de puentes grúa), el cálculo preciso de las solicitaciones internas de fuerza cortante $V(x)$, momento flector $M(x)$, pendiente elástica o giro $\theta(x)$ y deflexión o flecha elástica $v(x)$ constituye el fundamento para garantizar la seguridad bajo los **Estados Límites de Resistencia** (capacidad de flexión y cortante) y el confort y serviciabilidad bajo los **Estados Límites de Servicio** (control de fisuración y deformaciones excesivas según la norma colombiana sismorresistente **NSR-10, Títulos B y C**, así como la especificación **AISC 360-16 / LRFD**).
+**CivilBeam 2026** automatiza el análisis estructural lineal de vigas sometidas simultáneamente a múltiples tipos de apoyos, cargas transversales, cargas horizontales, momentos concentrados y acciones térmicas o reológicas.
 
-Las herramientas tradicionales simplificadas suelen limitarse a casos canónicos aislados (una sola carga puntual o distribuida uniforme). Sin embargo, en la práctica profesional real, una viga soporta simultáneamente:
-1. Su **peso propio volumétrico**, calculado automáticamente a partir de la geometría exacta de la sección transversal ($\gamma \cdot A$).
-2. Cargas puntuales concentradas en cualquier abscisa $x \in [0, L]$ (columnas apeadas, maquinaria, crucetas).
-3. Múltiples cargas distribuidas uniformes o trapezoidales variables ($w_1 \to w_2$) actuando sobre tramos arbitrarios $[x_1, x_2]$.
-4. Momentos flectores concentrados externos $M_0$ (empotramientos elásticos, conexiones a momento con columnas secundarias).
-5. Configuraciones geométricas tanto de **viga simplemente apoyada con o sin voladizos en ambos extremos** como de **viga en voladizo (empotramiento perfecto en $x = 0$)**.
-
-**CivilBeam 2026** resuelve de forma analítica y numérica rigurosa este problema estructural, integrando una interfaz gráfica moderna (Flet en Material 3), persistencia relacional en SQLite, cálculo de secciones poligonales mediante el Teorema de Green (`pysections`), generación automática de diagramas técnicos vectorizados (Matplotlib) y exportación de memorias de cálculo formales en Microsoft Word (`docxtpl`).
+Sus capacidades principales son:
+- **Motor FEM 1D desacoplado (`app/modelo.py`):** Resuelve sistemas isostáticos e hiperestáticos mediante el Método de Elementos Finitos 1D sin requerir Flet ni ventanas gráficas, lo que permite importarlo y probarlo desde consola o scripts.
+- **5 tipos de apoyo estructural:** Simple/Móvil (`movil`), Articulado/Fijo (`fijo`), Empotrado rígido (`empotrado`), Empotramiento guiado/deslizante (`guiado`) y Apoyo elástico traslacional/rotacional (`elastico`).
+- **Cargas por geometría y por origen (NSR-10 Título B):** Puntuales ($P, P_x$), distribuidas uniformes, triangulares y trapezoidales, momentos concentrados ($M_0$), cargas no lineales/polinómicas ($w(u) = a_0 + a_1 u + a_2 u^2 + a_3 u^3$), peso propio automático ($\gamma \cdot A$) y efectos térmicos/reológicos ($\Delta T$ uniforme, gradiente térmico $\Delta T_g$, retracción y fluencia lenta $\varphi$).
+- **Revisión paso a paso y exportación a Word:** Pestaña interactiva **Paso a Paso** con fórmulas, sustituciones numéricas y extracción directa a `.docx` (`app/paso_a_paso.py`), además de memoria de cálculo automática basada en plantilla (`app/reporte.py`).
+- **Persistencia local en SQLite (`app/db.py`):** Historial de proyectos y cálculos con búsqueda, reapertura en formulario y comparación superpuesta de diagramas.
 
 ---
 
-## 2. Fundamento Matemático y Mecánico
+## 2. Background y Antecedentes
 
-### 2.1 Ecuación Diferencial de Euler-Bernoulli
-Para vigas prismáticas homogéneas e isotrópicas bajo flexión pura en régimen elástico lineal y pequeñas deformaciones, la relación entre la carga distribuida vertical $q(x)$, la fuerza cortante $V(x)$, el momento flector $M(x)$, la rotación de la sección $\theta(x)$ y la deflexión vertical $v(x)$ se rige por la ecuación diferencial de cuarto orden:
+En el diseño y revisión de elementos horizontales de ingeniería civil (vigas de edificación, pasarelas peatonales, vigas de puente y vigas carril), la determinación exacta de la fuerza axial $N(x)$, fuerza cortante $V(x)$, momento flector $M(x)$, giro elástico $\theta(x)$ y flecha vertical $v(x)$ sustenta las verificaciones de resistencia y serviciabilidad exigidas por el reglamento **NSR-10 (Títulos B y C)** y la especificación **AISC 360-16**.
 
-$$E I \frac{d^4 v}{dx^4} = -q(x)$$
+Las calculadoras académicas clásicas suelen restringirse a casos canónicos aislados (viga simplemente apoyada con una carga puntual o distribuida uniforme) y no contemplan apoyos elásticos, empotramientos guiados, cargas polinómicas ni deformaciones impuestas por temperatura o retracción/fluencia lenta.
 
-Integrando sucesivamente a lo largo de la directriz longitudinal de la viga:
-
-$$\frac{dV(x)}{dx} = -q(x) \quad \implies \quad V(x) = V(0) - \int_{0}^{x} q(\xi) \, d\xi$$
-
-$$\frac{dM(x)}{dx} = V(x) \quad \implies \quad M(x) = M(0) + \int_{0}^{x} V(\xi) \, d\xi$$
-
-$$\frac{d\theta(x)}{dx} = \frac{M(x)}{E I} \quad \implies \quad \theta(x) = \theta(0) + \int_{0}^{x} \frac{M(\xi)}{E I} \, d\xi$$
-
-$$\frac{dv(x)}{dx} = \theta(x) \quad \implies \quad v(x) = v(0) + \int_{0}^{x} \theta(\xi) \, d\xi$$
-
-Donde:
-- $E$ es el Módulo de Elasticidad longitudinal del material (concreto o acero estructural) en $\text{Pa}$ o $\text{GPa}$.
-- $I$ es el Momento de Inercia baricéntrico respecto al eje neutro de flexión en $\text{m}^4$.
-- $E I$ representa la rigidez a la flexión del elemento.
-
-### 2.2 Vectorización Numérica con NumPy y Funciones Singulares
-Para evitar bucles iterativos lentos (`for`) en Python, el eje de la viga se discretiza en una malla adaptativa vectorizada $X \in \mathbb{R}^N$ ($N \ge 1000$ puntos) mediante `np.linspace(0, L, N)` enriquecida con puntos de discontinuidad exacta en apoyos y puntos de aplicación de cargas concentradas.
-
-Cada carga se modela mediante álgebra booleana vectorizada (`np.where` y máscaras de NumPy):
-- **Carga puntual $P$ en $x_0$:** Aporta a $V(x)$ un salto negativo $-P \cdot [x \ge x_0]$ y a $M(x)$ una contribución $-P \cdot (x - x_0) \cdot [x \ge x_0]$.
-- **Carga distribuida trapezoidal $[x_1, x_2]$ con intensidades $w_1, w_2$:**
-  $$w(\xi) = w_1 + \frac{w_2 - w_1}{x_2 - x_1} (\xi - x_1)$$
-  Aporta a $V(x)$ la integral de área del trapecio comprendido entre $x_1$ y $\min(x, x_2)$, y a $M(x)$ el momento estático correspondiente respecto al punto $x$.
-- **Momento concentrado $M_0$ en $x_0$:** Aporta una discontinuidad en escalón $+M_0 \cdot [x \ge x_0]$ en el diagrama de momentos flectores sin alterar el cortante.
-
-### 2.3 Doble Integración Numérica con SciPy (`cumulative_trapezoid`)
-La rotación y la flecha elástica se obtienen aplicando la regla trapezoidal acumulativa de SciPy:
-```python
-from scipy.integrate import cumulative_trapezoid
-
-# 1. Curvatura kappa(x) = M(x) / (E * I)
-kappa = M / (E_Pa * I_m4)
-
-# 2. Primera integración -> Giro theta(x) salvo constante C1
-theta_indefinida = cumulative_trapezoid(kappa, x, initial=0.0)
-
-# 3. Segunda integración -> Deflexión v(x) salvo constantes C1*x + C2
-v_indefinida = cumulative_trapezoid(theta_indefinida, x, initial=0.0)
-```
-
-### 2.4 Solución Exacta de Condiciones de Frontera
-Las constantes de integración $C_1$ y $C_2$ se resuelven analíticamente:
-- **Viga Simplemente Apoyada con apoyos en $x_1$ y $x_2$:**
-  $$v(x_1) = 0 \quad \text{y} \quad v(x_2) = 0$$
-  $$v_{\text{num}}(x_1) + C_1 x_1 + C_2 = 0$$
-  $$v_{\text{num}}(x_2) + C_1 x_2 + C_2 = 0$$
-  $$\implies C_1 = -\frac{v_{\text{num}}(x_2) - v_{\text{num}}(x_1)}{x_2 - x_1}, \quad C_2 = -v_{\text{num}}(x_1) - C_1 x_1$$
-  $$\theta(x) = \theta_{\text{num}}(x) + C_1, \quad v(x) = v_{\text{num}}(x) + C_1 x + C_2$$
-
-- **Viga en Voladizo (empotramiento en $x = 0$):**
-  $$\theta(0) = 0 \implies C_1 = 0$$
-  $$v(0) = 0 \implies C_2 = 0$$
-  $$\theta(x) = \theta_{\text{num}}(x), \quad v(x) = v_{\text{num}}(x)$$
+Este proyecto surge en el curso **Programación II (Grupo 18, Semestre 2026-III)** de la **Universidad Distrital Francisco José de Caldas — Facultad Tecnológica**, integrando:
+- El módulo geométrico poligonal `sections.py` (*Teorema de Green / Gauss*) previamente desarrollado en la asignatura (`pySections`).
+- Un solucionador matricial general por Elementos Finitos 1D con cuadratura de Gauss-Legendre.
+- Una arquitectura modular en capas que separa completamente el cálculo ingenieril, las gráficas vectorizadas, la base de datos SQLite, los reportes en Word y la interfaz gráfica de escritorio.
 
 ---
 
-## 3. Integración con el Módulo `pysections` (`sections.py`)
+## 3. Estructura del Código
 
-El proyecto reutiliza e integra directamente el módulo `sections.py` ubicado en la carpeta del curso. Dicho módulo calcula las propiedades mecánicas de secciones transversales arbitrarias representadas como polígonos cerrados 2D mediante la aplicación computacional del **Teorema de Green / Fórmula del Agrimensor de Gauss**:
-
-$$\text{Área } A = \frac{1}{2} \sum_{i=0}^{n-1} (x_i y_{i+1} - x_{i+1} y_i)$$
-
-$$\text{Centroide } \bar{x} = \frac{1}{6A} \sum_{i=0}^{n-1} (x_i + x_{i+1})(x_i y_{i+1} - x_{i+1} y_i), \quad \bar{y} = \frac{1}{6A} \sum_{i=0}^{n-1} (y_i + y_{i+1})(x_i y_{i+1} - x_{i+1} y_i)$$
-
-$$I_x = \frac{1}{12} \sum_{i=0}^{n-1} (y_i^2 + y_i y_{i+1} + y_{i+1}^2)(x_i y_{i+1} - x_{i+1} y_i) - A \bar{y}^2$$
-
-### Secciones Disponibles en la Aplicación
-1. **Rectangular de Concreto (`crear_seccion_rectangular`):** Adaptador que utiliza la clase `Deck` de `sections.py` para vigas rectangulares estándar de ancho $b$ y altura $h$.
-2. **Perfil I de Acero Estructural (`PerfilI`):** Subclase especializada desarrollada en `app/secciones.py` que hereda de `_SinglePolygonSection` en `sections.py`. Genera automáticamente los 12 vértices del polígono baricéntrico del perfil I dado su ancho de patín ($b_f$), peralte total ($d$), espesor de patín ($t_f$) y espesor de alma ($t_w$).
-3. **Viga Cajón / Viga Puente Bulb-Tee (`BulbTeeGirderBridge`):** Adaptador directo para vigas preesforzadas de puentes vehiculares provistas por `sections.py`.
-
----
-
-## 4. Criterios de Verificación Normativa (NSR-10 / AISC)
-
-Para cada cálculo efectuado, el motor evalúa automáticamente dos estados límite:
-1. **Esfuerzo Normal Máximo por Flexión ($\sigma_{\text{max}}$):**
-   $$\sigma_{\text{max}} = \frac{M_{\text{max}} \cdot c}{I} \le \sigma_{\text{adm}}$$
-   Donde $c = \frac{h}{2}$ (distancia a la fibra extrema). Si $\sigma_{\text{max}} \le \sigma_{\text{adm}}$ $\to$ **CUMPLE**.
-2. **Deflexión Elástica Máxima ($|v|_{\text{max}}$):**
-   $$|v|_{\text{max}} \le \delta_{\text{adm}} = \frac{L}{k}$$
-   Valores normativos seleccionables en el menú desplegable:
-   - $L / 180$: Elementos que no soportan cielos rasos ni acabados sensibles.
-   - $L / 240$: Vigas de piso estándar sometidas a cargas vivas.
-   - $L / 360$: Límite estricto NSR-10 (Título B.4) para evitar agrietamiento en mampostería.
-   - $L / 480$: Elementos que soportan acabados extremadamente rígidos o frágiles.
-
----
-
-## 5. Arquitectura del Software
-
-El código sigue una estricta separación de responsabilidades en capas (Clean Architecture / MVC):
-
-```
+```text
 analisis_vigas/
 │
-├── main.py                     # Punto de entrada de la aplicación de escritorio Flet
-├── requirements.txt            # Dependencias fijadas con versión exacta
-├── .gitignore                  # Exclusiones de Git (.venv, pycache, db, reportes)
-├── ejecutar.bat                # Lanzador automatizado en 1 clic para Windows
-├── README.md                   # Documentación técnica integral
+├── main.py                        # Punto de entrada GUI (Flet + NavigationRail de 3 vistas)
+├── ejecutar_sin_interfaz.py       # Demostración headless sin Flet (cálculo + Word automático)
+├── ejecutar.bat                   # Lanzador automático en 1 clic para Windows (CMD)
+├── ejecutar.ps1                   # Lanzador alternativo para PowerShell
+├── requirements.txt               # Dependencias con versiones fijadas
+├── .gitignore                     # Exclusiones (.venv, __pycache__, datos/*.db, reportes/, *.png)
+├── README.md                      # Documentación del proyecto
 │
 ├── app/
 │   ├── __init__.py
-│   ├── sections.py             # Motor geométrico original pysections (Gauss / Green)
-│   ├── secciones.py            # Adaptadores y extensión PerfilI (_SinglePolygonSection)
-│   ├── modelo.py               # Modelo físico y matemático (NumPy / SciPy cumulative_trapezoid)
-│   ├── db.py                   # Persistencia relacional SQLite (2 tablas, FK, CASCADE, CRUD)
-│   ├── graficas.py             # Generación de diagramas orientados a objetos (Matplotlib)
-│   ├── reporte.py              # Exportación automática de memorias Word (.docx) con docxtpl
+│   ├── modelo.py                  # Motor FEM 1D (VigaIsostatica, Apoyo, cargas, combinaciones NSR-10)
+│   ├── sections.py                # Motor geométrico poligonal pySections (Teorema de Green)
+│   ├── secciones.py               # Adaptadores de secciones (Rectangular, PerfilI, Bulb-Tee)
+│   ├── paso_a_paso.py             # Desglose explicativo en 6 pasos y exportador Word paso a paso
+│   ├── reporte.py                 # Generador de memoria Word oficial con docxtpl
+│   ├── graficas.py                # Gráficas técnicas de 4 paneles y comparativas (Matplotlib)
+│   ├── db.py                      # Persistencia relacional SQLite (tablas proyectos y calculos)
 │   │
-│   └── ui/                     # Capa de Interfaz Gráfica (Flet Material 3)
+│   └── ui/                        # Capa de interfaz gráfica (Flet Material 3)
 │       ├── __init__.py
-│       ├── calculo_view.py     # Vista de entrada de datos, cálculo y visualización gráfica
-│       └── historial_view.py   # Vista de base de datos, búsqueda, comparación y reapertura
+│       ├── calculo_view.py        # Pestaña "Cálculo": apoyos, cargas, sección y diagramas
+│       ├── paso_a_paso_view.py    # Pestaña "Paso a Paso": revisión de ecuaciones y botón a Word
+│       └── historial_view.py      # Pestaña "Historial BD": consulta, reapertura y comparación
 │
 ├── plantillas/
-│   └── memoria.docx            # Plantilla Word con estilos institucionales y tags Jinja2
+│   └── memoria.docx               # Plantilla Word institucional con etiquetas Jinja2
 │
 ├── herramientas/
-│   └── crear_plantilla.py      # Generador programático de la plantilla docx
+│   └── crear_plantilla.py         # Script generador de plantillas/memoria.docx
 │
 ├── ejemplos/
-│   ├── memoria_ejemplo.docx    # Memoria de cálculo completa de muestra generada
-│   └── capturas/
-│       └── diagramas_ejemplo.png # Gráfica técnica de alta resolución exportada
+│   └── memoria_ejemplo.docx       # Ejemplo de memoria Word generada
 │
 └── tests/
     ├── __init__.py
-    └── test_modelo.py          # Suite de 5 pruebas unitarias con pytest (Beer & Johnston)
+    └── test_modelo.py             # Suite de 11 pruebas unitarias pytest (analíticas + BD + Word)
 ```
 
 ---
 
-## 6. Base de Datos Relacional SQLite
+## 4. Cómo Funciona / Marco Matemático
 
-El módulo `app/db.py` implementa un esquema normalizado con **2 tablas**, clave foránea con integridad referencial y borrado en cascada (`ON DELETE CASCADE`), y todas las sentencias SQL parametrizadas con `?`:
+### 4.1 Propiedades Geométricas por Teorema de Green (`app/sections.py` y `app/secciones.py`)
+Cada sección transversal (rectangular, perfil I de 12 vértices o viga puente *Bulb-Tee*) se representa como un polígono cerrado en 2D y sus propiedades se obtienen mediante la fórmula del agrimensor de Gauss:
 
-```sql
-CREATE TABLE IF NOT EXISTS proyectos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nombre TEXT UNIQUE NOT NULL,
-    descripcion TEXT,
-    fecha_creacion TEXT NOT NULL
-);
+$$A = \frac{1}{2} \sum_{i=0}^{n-1} (x_i y_{i+1} - x_{i+1} y_i), \qquad I_x = \frac{1}{12} \sum_{i=0}^{n-1} (y_i^2 + y_i y_{i+1} + y_{i+1}^2)(x_i y_{i+1} - x_{i+1} y_i) - A\bar{y}^2$$
 
-CREATE TABLE IF NOT EXISTS calculos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    proyecto_id INTEGER NOT NULL,
-    nombre TEXT NOT NULL,
-    tipo_viga TEXT NOT NULL,
-    longitud REAL NOT NULL,
-    datos_entrada TEXT NOT NULL,       -- Configuración en formato JSON
-    resumen_resultados TEXT NOT NULL,  -- V_max, M_max, flecha en JSON
-    cumple_global INTEGER NOT NULL,
-    autor TEXT,
-    fecha TEXT NOT NULL,
-    FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE
-);
-```
+El módulo resistente es $W_{\text{mín}} = I_x / c_{\text{máx}}$, y el peso propio distribuido se calcula automáticamente cuando está activo como $w_{pp} = \gamma \cdot A$.
 
-### Funcionalidades CRUD Completas:
-1. **Create:** Guarda automáticamente o a petición el proyecto, cálculo, sección y cargas.
-2. **Read:** Lista cálculos con búsqueda interactiva por texto en tiempo real.
-3. **Reopen:** Al pulsar *"Reabrir"*, los datos JSON de entrada se deserializan y recargan inmediatamente en el formulario de cálculo.
-4. **Delete:** Modal de confirmación que elimina el cálculo y sus relaciones en cascada.
-5. **Compare:** Selección mediante casillas de verificación de 2 cálculos guardados para generar una gráfica comparativa superpuesta de deflexiones y momentos.
+### 4.2 Módulo Efectivo por Fluencia Lenta y Acciones Térmicas
+Para considerar fluencia lenta del material ($\varphi \ge 0$), el módulo de elasticidad longitudinal se ajusta a:
 
----
+$$E_{\text{eff}} = \frac{E}{1 + \varphi}$$
 
-## 7. Pruebas Unitarias Automatizadas (`pytest`)
+Las acciones térmicas y de retracción se incorporan como deformaciones iniciales equivalentes factorizadas según la combinación de carga activa ($f_T$):
 
-El archivo `tests/test_modelo.py` contiene 5 pruebas de validación rigurosa frente a soluciones exactas de la literatura (*Mecánica de Materiales*, Ferdinand P. Beer & E. Russell Johnston Jr. / R. C. Hibbeler):
+$$\varepsilon_0 = f_T \left(\alpha_T \Delta T_{\text{unif}} - \varepsilon_{\text{retrac}}\right), \qquad \kappa_T = \frac{f_T \, \alpha_T \, \Delta T_{\text{grad}}}{h}$$
 
-| Caso de Prueba | Modelo / Configuración | Parámetros | Solución Analítica Cerrada | Resultado SciPy / NumPy |
-| :--- | :--- | :--- | :--- | :--- |
-| **Caso 1** | Simplemente apoyada con carga puntual central | $L=6\text{ m}, P=24\text{ kN}, E=200\text{ GPa}$ | $M_{\text{max}} = \frac{PL}{4} = 36\text{ kN}\cdot\text{m}$, $\delta_{\text{max}} = \frac{PL^3}{48EI} = 1.055\text{ mm}$ | **100% Coincidente** ($< 0.5\%$ error) |
-| **Caso 2** | Simplemente apoyada con carga uniforme | $L=8\text{ m}, w=15\text{ kN/m}, E=25\text{ GPa}$ | $M_{\text{max}} = \frac{wL^2}{8} = 120\text{ kN}\cdot\text{m}$, $\delta_{\text{max}} = \frac{5wL^4}{384EI} = 3.906\text{ mm}$ | **100% Coincidente** ($< 0.2\%$ error) |
-| **Caso 3** | Voladizo con carga puntual en extremo libre | $L=3\text{ m}, P=10\text{ kN}, E=200\text{ GPa}$ | $M_{\text{max}} = PL = 30\text{ kN}\cdot\text{m}$, $\delta_{\text{max}} = \frac{PL^3}{3EI} = 2.457\text{ mm}$ | **100% Coincidente** ($< 0.2\%$ error) |
-| **Caso 4** | Geometría y propiedades de Perfil I | $b_f=200, d=400, t_f=20, t_w=10\text{ mm}$ | $A = 2 b_f t_f + (d - 2t_f) t_w$, $I = \frac{1}{12} b_f d^3 - \frac{1}{12} (b_f - t_w)(d - 2t_f)^3$ | **100% Idéntico a pysections** |
-| **Caso 5** | Operaciones CRUD en SQLite | Guardado, consulta, filtrado y eliminación con cascada | Base de datos temporal aislada con `tmp_path` | **100% Validado** |
+### 4.3 Formulación por Elementos Finitos 1D (`app/modelo.py`)
+La viga de longitud $L$ se discretiza en una malla adaptativa ($N_{\text{base}} = 201$ nodos enriquecida exactamente en todas las abscisas de apoyos y puntos de aplicación/inicio/fin de cargas). Cada nodo posee **3 grados de libertad**: desplazamiento axial $u$, deflexión transversal $v$ y giro $\theta$.
+
+- **Flexión de Euler-Bernoulli ($v, \theta$) con funciones cúbicas de Hermite:**
+  $$EI \frac{d^4 v}{dx^4} = -q(x), \qquad [K_b^e]\{d_b^e\} = \{F_b^e\}$$
+- **Barra axial 1D desacoplada ($u$):**
+  $$EA \frac{d^2 u}{dx^2} = -q_x(x)$$
+- **Integración exacta de cargas distribuidas y polinómicas:** Las fuerzas nodales consistentes para cargas uniformes, triangulares, trapezoidales y polinómicas $w(u) = a_0 + a_1 u + a_2 u^2 + a_3 u^3$ se evalúan mediante **cuadratura de Gauss-Legendre de 4 puntos**.
+- **Condiciones de apoyo y resortes:** Los grados de libertad restringidos se imponen en el sistema global $K \cdot U = F$, sumando directamente las rigideces elásticas ($k_y, k_\theta, k_x$) en la diagonal de $K$ y recuperando reacciones exactas mediante $R = K_{\text{orig}} U - F_{\text{nodal}}$.
+
+### 4.4 Combinaciones de Carga y Chequeo Normativo (NSR-10)
+Se soportan las combinaciones `servicio` y `nsr_1` a `nsr_6` (NSR-10 B.2.4-1 a B.2.4-6) aplicadas por origen (`D`, `L`, `W`, `E`, `S`, `T`), verificando al final:
+
+$$\sigma_{\text{máx}} = \frac{|M|_{\text{máx}} \cdot c}{I_x} + \frac{|N|_{\text{máx}}}{A} \le \sigma_{\text{adm}}, \qquad |\delta|_{\text{máx}} \le \frac{L}{k} \quad (k \in \{180, 240, 360, 480\})$$
 
 ---
 
-## 8. Guía de Instalación y Ejecución
+## 5. Instalación Paso a Paso
 
-### Opción A: Ejecución en 1 Clic (Recomendada para Windows)
-Haga doble clic en el archivo:
-```bat
-ejecutar.bat
-```
-El script creará automáticamente el entorno virtual `.venv` si no existe, verificará las dependencias de `requirements.txt` y lanzará la aplicación de escritorio.
+### Requisitos previos
+- **Python 3.10 o superior** (probado en Windows con Python 3.14).
+- Conexión a Internet la primera vez para descargar las librerías de `requirements.txt`.
 
-### Opción B: Ejecución Manual desde la Terminal (PowerShell / CMD)
-1. Navegue al directorio del proyecto:
+### Pasos de instalación (terminal / PowerShell)
+
+1. **Clonar el repositorio:**
    ```powershell
-   cd "D:\Desktop\TODO\Universidad Distrital\SEMETRE 10 ING\Programación II\analisis_vigas"
+   git clone https://github.com/Johan17Ayala/CivilBeam-2026.git
+   cd CivilBeam-2026
    ```
-2. Cree y active un entorno virtual de Python:
+
+2. **Crear el entorno virtual `.venv`:**
    ```powershell
    python -m venv .venv
-   .\.venv\Scripts\activate
    ```
-3. Instale las dependencias fijadas:
+
+3. **Activar el entorno virtual:**
+   - En **PowerShell (Windows)**:
+     ```powershell
+     .\.venv\Scripts\Activate.ps1
+     ```
+   - En **CMD (Windows)**:
+     ```bat
+     .venv\Scripts\activate.bat
+     ```
+   - En **Linux / macOS**:
+     ```bash
+     source .venv/bin/activate
+     ```
+
+4. **Instalar dependencias:**
    ```powershell
    pip install -r requirements.txt
    ```
-4. Ejecute la aplicación de escritorio:
+
+5. **Verificar la instalación ejecutando las pruebas unitarias:**
+   ```powershell
+   pytest -v
+   ```
+   *(Debe reportar `11 passed`).*
+
+6. **Ejecutar la aplicación gráfica:**
    ```powershell
    python main.py
    ```
-5. Ejecute la suite de pruebas unitarias:
-   ```powershell
-   pytest tests/test_modelo.py -v
-   ```
+   *Atajo en Windows:* también puedes hacer doble clic en `ejecutar.bat` (crea `.venv`, instala `requirements.txt` si falta y abre la ventana automáticamente).
 
 ---
 
-## 9. Referencias Bibliográficas y Normativas
-- **Asociación Colombiana de Ingeniería Sísmica (AIS).** *Reglamento Colombiano de Construcción Sismo Resistente (NSR-10)*. Título B (Cargas) y Título C (Concreto Estructural). Bogotá, Colombia.
-- **American Institute of Steel Construction (AISC).** *Specification for Structural Steel Buildings (AISC 360-16)*. Chicago, IL, 2016.
-- **Beer, F. P., Johnston, E. R., DeWolf, J. T., & Mazurek, D. F.** *Mecánica de Materiales*. 8ª Edición, McGraw-Hill Education, 2020.
-- **Hibbeler, R. C.** *Análisis Estructural*. 9ª Edición, Pearson Educación, 2016.
+## 6. Uso con un Ejemplo Básico
+
+### Opción A — Uso en la aplicación de escritorio (`python main.py`)
+1. En la pestaña **Cálculo**, define la longitud $L$ (por ejemplo `6.0 m`), selecciona la sección transversal y los apoyos (por ejemplo, fijo en $x = 0\text{ m}$ y móvil en $x = 6\text{ m}$).
+2. Agrega una o varias cargas (puntuales, distribuidas uniformes/trapezoidales/polinómicas o momentos) con su origen (`D`, `L`, `W`, `E`, `S`, `T`) y presiona **CALCULAR VIGA**.
+3. Revisa los diagramas de $N(x)$, $V(x)$, $M(x)$ y $\delta(x)$.
+4. Abre la pestaña **Paso a Paso** (o pulsa **Ver Cálculo Paso a Paso**) para inspeccionar los 6 pasos detallados y presiona **Extraer Paso a Paso a Word (.docx)** para guardar el documento en `reportes/`.
+
+### Opción B — Uso sin interfaz gráfica (módulo independiente en Python)
+El repositorio incluye el script `ejecutar_sin_interfaz.py` como demostración directa de uso headless:
+
+```python
+from app.modelo import analizar_viga_desde_diccionario
+from app.paso_a_paso import generar_pasos_calculo, generar_word_paso_a_paso
+
+config = {
+    "longitud": 8.0,
+    "tipo_viga": "empotrada_movil",
+    "apoyos_detalle": [
+        {"tipo": "empotrado", "x": 0.0},
+        {"tipo": "movil", "x": 8.0},
+    ],
+    "E_GPa": 24.0,
+    "sigma_adm": 180.0,
+    "limite_k": 360,
+    "incluir_peso_propio": True,
+    "combinacion": "nsr_2",
+    "seccion": {"tipo": "rectangular", "parametros": {"base": 0.30, "altura": 0.60}},
+    "cargas": [
+        {"tipo": "distribuida", "w1": 18.0, "w2": 18.0, "x1": 0.0, "x2": 8.0, "origen": "D"},
+        {"tipo": "puntual", "P": 35.0, "Px": 10.0, "x": 4.0, "origen": "L"},
+    ],
+}
+
+viga, resultado = analizar_viga_desde_diccionario(config)
+pasos = generar_pasos_calculo(viga, resultado)
+print(f"|V| máx = {resultado.V_abs_max:.2f} kN | |M| máx = {resultado.M_abs_max:.2f} kN·m")
+generar_word_paso_a_paso(viga, resultado, "Proyecto Demo", "Viga V-101", "Ing. Civil")
+```
+
+También puedes correr directamente desde consola:
+```powershell
+python ejecutar_sin_interfaz.py
+```
+
+---
+
+## 7. Dependencias
+
+Listado fijado en `requirements.txt`:
+
+| Paquete | Versión | Uso en el proyecto |
+| :--- | :--- | :--- |
+| `flet` | `1.0.5` | Interfaz gráfica de escritorio Material 3 |
+| `flet-desktop` | `1.0.5` | Runtime nativo de ventana desktop para Flet |
+| `numpy` | `2.5.4` | Álgebra lineal FEM 1D, mallas adaptativas y cuadratura de Gauss-Legendre |
+| `scipy` | `1.18.1` | Soporte científico y utilidades numéricas |
+| `matplotlib` | `3.11.2` | Generación de diagramas $V(x), M(x), \theta(x), v(x)$ y comparativas |
+| `docxtpl` | `0.20.2` | Rellenado de plantilla Word institucional (`plantillas/memoria.docx`) |
+| `python-docx` | `1.2.0` | Construcción directa del documento Word paso a paso (`app/paso_a_paso.py`) |
+| `pytest` | `9.2.0` | Ejecución de pruebas unitarias automatizadas (`tests/test_modelo.py`) |
+
+Además se utiliza `sqlite3` de la biblioteca estándar de Python para la base de datos local (`datos/vigas.db`).
+
+---
+
+## 8. Créditos y Contribuciones
+
+- **Universidad Distrital Francisco José de Caldas** — Facultad Tecnológica, Ingeniería Civil (*Programación II*, Grupo 18, 2026-III).
+- **Propietario del repositorio:** [@Johan17Ayala](https://github.com/Johan17Ayala)
+- **Colaborador:** [@herrerita1414](https://github.com/herrerita1414)
+
+### Cómo contribuir
+1. Clona el repositorio (`git clone https://github.com/Johan17Ayala/CivilBeam-2026.git`) o crea una rama descriptiva (`git checkout -b feature/nueva-mejora`).
+2. Realiza tus cambios manteniendo la separación entre el núcleo numérico (`app/modelo.py`, `app/paso_a_paso.py`) y la capa UI (`app/ui/`).
+3. Ejecuta `pytest -v` y verifica que todas las pruebas unitarias pasen antes de hacer `commit` y `push`.
