@@ -576,6 +576,7 @@ class CalculoView(ft.Container):
                 })
 
             self._refrescar_lista_cargas_ui()
+            self.pagina.update()
             self._mostrar_mensaje("Carga agregada correctamente.", bgcolor=ft.Colors.GREEN_700)
         except Exception as ex:
             self._mostrar_error(f"Error al ingresar carga: {ex}")
