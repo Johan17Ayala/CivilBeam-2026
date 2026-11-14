@@ -113,21 +113,51 @@ $$\sigma_{\text{máx}} = \frac{|M|_{\text{máx}} \cdot c}{I_x} + \frac{|N|_{\tex
 ## 5. Instalación Paso a Paso
 
 ### Requisitos previos
-- **Python 3.10 o superior** (probado en Windows con Python 3.14).
+- **Python 3.10 o superior** (al instalar en Windows, asegurarse de marcar la casilla *"Add python.exe to PATH"*).
+- **Git instalado en el sistema:** Si el computador es totalmente nuevo o nunca se ha usado para programar, `git clone` fallará si no está instalado. Para instalarlo según tu sistema operativo:
+  - **Windows:**
+    - Opción A (recomendada por consola): abrir PowerShell y ejecutar:
+      ```powershell
+      winget install --id Git.Git -e
+      ```
+    - Opción B (instalador gráfico): descargar e instalar desde el sitio oficial [git-scm.com/download/win](https://git-scm.com/download/win).
+  - **Linux (Ubuntu / Debian / Mint):**
+    ```bash
+    sudo apt update && sudo apt install -y git
+    ```
+  - **Linux (Fedora / RHEL):**
+    ```bash
+    sudo dnf install -y git
+    ```
+  - **Linux (Arch / Manjaro):**
+    ```bash
+    sudo pacman -S git
+    ```
+  - **macOS:**
+    ```bash
+    xcode-select --install
+    # o mediante Homebrew:
+    brew install git
+    ```
 - Conexión a Internet la primera vez para descargar las librerías de `requirements.txt`.
 
-### Pasos de instalación (terminal / PowerShell)
+### Pasos de instalación (terminal / consola)
 
 1. **Clonar el repositorio:**
-   ```powershell
+   ```bash
    git clone https://github.com/Johan17Ayala/CivilBeam-2026.git
    cd CivilBeam-2026
    ```
 
 2. **Crear el entorno virtual `.venv`:**
-   ```powershell
-   python -m venv .venv
-   ```
+   - En **Windows (PowerShell / CMD)**:
+     ```powershell
+     python -m venv .venv
+     ```
+   - En **Linux / macOS**:
+     ```bash
+     python3 -m venv .venv
+     ```
 
 3. **Activar el entorno virtual:**
    - En **PowerShell (Windows)**:
@@ -144,20 +174,36 @@ $$\sigma_{\text{máx}} = \frac{|M|_{\text{máx}} \cdot c}{I_x} + \frac{|N|_{\tex
      ```
 
 4. **Instalar dependencias:**
-   ```powershell
+   ```bash
    pip install -r requirements.txt
    ```
 
 5. **Verificar la instalación ejecutando las pruebas unitarias:**
-   ```powershell
-   pytest -v
-   ```
+   - En **Windows**:
+     ```powershell
+     python -m pytest -v
+     ```
+   - En **Linux / macOS**:
+     ```bash
+     python3 -m pytest -v
+     ```
    *(Debe reportar `11 passed`).*
 
+   > **¿Por qué `python -m pytest -v` en lugar de solo `pytest -v`?**  
+   > En sistemas Windows o instalaciones limpias, ejecutar solo `pytest -v` puede arrojar el error:  
+   > `El término 'pytest' no se reconoce como nombre de un cmdlet, función o programa ejecutable...`  
+   > Esto ocurre porque la carpeta de ejecutables locales (`.venv\Scripts` en Windows o `.venv/bin` en Linux) no siempre se registra en el `PATH` del sistema, o porque las directivas de seguridad de PowerShell restringen la llamada directa a scripts ejecutables (`.exe`/`.ps1`).  
+   > Al usar **`python -m pytest -v`** (o `python3 -m pytest -v`), se invoca el módulo de pruebas directamente desde el intérprete de Python, lo que funciona de manera idéntica y 100 % garantizada en **Windows, Linux y macOS**.
+
 6. **Ejecutar la aplicación gráfica:**
-   ```powershell
-   python main.py
-   ```
+   - En **Windows**:
+     ```powershell
+     python main.py
+     ```
+   - En **Linux / macOS**:
+     ```bash
+     python3 main.py
+     ```
    *Atajo en Windows:* también puedes hacer doble clic en `ejecutar.bat` (crea `.venv`, instala `requirements.txt` si falta y abre la ventana automáticamente).
 
 ---
@@ -237,4 +283,4 @@ Además se utiliza `sqlite3` de la biblioteca estándar de Python para la base d
 ### Cómo contribuir
 1. Clona el repositorio (`git clone https://github.com/Johan17Ayala/CivilBeam-2026.git`) o crea una rama descriptiva (`git checkout -b feature/nueva-mejora`).
 2. Realiza tus cambios manteniendo la separación entre el núcleo numérico (`app/modelo.py`, `app/paso_a_paso.py`) y la capa UI (`app/ui/`).
-3. Ejecuta `pytest -v` y verifica que todas las pruebas unitarias pasen antes de hacer `commit` y `push`.
+3. Ejecuta `python -m pytest -v` (o `python3 -m pytest -v` en Linux/macOS) y verifica que las 11 pruebas unitarias pasen antes de hacer `commit` y `push`.
