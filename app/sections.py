@@ -1,7 +1,9 @@
 # sections.py
 #
 # A Python library for cross-sectional properties calculation.
-# Copyright (C) 2025  Cristian Danilo Ramírez Vargas
+# Copyright (C) 2025  Cristian Danilo Ramírez Vargas (@rvcristiand)
+# Project: PyMAS (Python Matrix Analysis of Structures)
+# Source repository: https://github.com/rvcristiand/pymas.git
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

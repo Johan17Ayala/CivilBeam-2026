@@ -24,7 +24,7 @@ En el diseño y revisión de elementos horizontales de ingeniería civil (vigas 
 Las calculadoras académicas clásicas suelen restringirse a casos canónicos aislados (viga simplemente apoyada con una carga puntual o distribuida uniforme) y no contemplan apoyos elásticos, empotramientos guiados, cargas polinómicas ni deformaciones impuestas por temperatura o retracción/fluencia lenta.
 
 Este proyecto surge en el curso **Programación II (Grupo 18, Semestre 2026-III)** de la **Universidad Distrital Francisco José de Caldas — Facultad Tecnológica**, integrando:
-- El módulo geométrico poligonal `sections.py` (*Teorema de Green / Gauss*) previamente desarrollado en la asignatura (`pySections`).
+- El módulo geométrico poligonal `sections.py` (*Teorema de Green / Gauss*) desarrollado por **Cristian Danilo Ramírez Vargas** ([@rvcristiand](https://github.com/rvcristiand)) en su proyecto de código abierto **[pymas](https://github.com/rvcristiand/pymas)**, adaptado y extendido en `app/secciones.py`.
 - Un solucionador matricial general por Elementos Finitos 1D con cuadratura de Gauss-Legendre.
 - Una arquitectura modular en capas que separa completamente el cálculo ingenieril, las gráficas vectorizadas, la base de datos SQLite, los reportes en Word y la interfaz gráfica de escritorio.
 
@@ -46,7 +46,7 @@ analisis_vigas/
 ├── app/
 │   ├── __init__.py
 │   ├── modelo.py                  # Motor FEM 1D (VigaIsostatica, Apoyo, cargas, combinaciones NSR-10)
-│   ├── sections.py                # Motor geométrico poligonal pySections (Teorema de Green)
+│   ├── sections.py                # Motor geométrico poligonal de pymas (rvcristiand, Teorema de Green)
 │   ├── secciones.py               # Adaptadores de secciones (Rectangular, PerfilI, Bulb-Tee)
 │   ├── paso_a_paso.py             # Desglose explicativo en 6 pasos y exportador Word paso a paso
 │   ├── reporte.py                 # Generador de memoria Word oficial con docxtpl
@@ -276,9 +276,14 @@ Además se utiliza `sqlite3` de la biblioteca estándar de Python para la base d
 
 ## 8. Créditos y Contribuciones
 
-- **Universidad Distrital Francisco José de Caldas** — Facultad Tecnológica, Ingeniería Civil (*Programación II*, Grupo 18, 2026-III).
-- **Propietario del repositorio:** [@Johan17Ayala](https://github.com/Johan17Ayala)
-- **Colaborador:** [@herrerita1414](https://github.com/herrerita1414)
+- **Universidad Distrital Francisco José de Caldas** — Facultad Tecnológica, Proyecto Curricular de Ingeniería Civil (*Programación II*, Grupo 18, Semestre 2026-III).
+- **Autor / Propietario del repositorio:** [@Johan17Ayala](https://github.com/Johan17Ayala) (Johan Ayala)
+- **Colaborador del proyecto:** [@herrerita1414](https://github.com/herrerita1414)
+
+### Agradecimiento y atribución de proyectos base
+- **[pymas](https://github.com/rvcristiand/pymas)** (*Python Matrix Analysis of Structures*), desarrollado por **Cristian Danilo Ramírez Vargas** ([@rvcristiand](https://github.com/rvcristiand)):
+  - El módulo `app/sections.py` fue extraído e integrado a partir de este proyecto de código abierto (bajo licencia GNU GPL v3).
+  - Provee la base de cálculo de propiedades mecánicas poligonales en 2D aplicando el Teorema de Green / Gauss, la cual fue adaptada y extendida en `app/secciones.py` con clases especializadas para perfiles estructurales I (`PerfilI`) y adaptadores para la interfaz Flet.
 
 ### Cómo contribuir
 1. Clona el repositorio (`git clone https://github.com/Johan17Ayala/CivilBeam-2026.git`) o crea una rama descriptiva (`git checkout -b feature/nueva-mejora`).
