@@ -327,3 +327,27 @@ Este componente utiliza el Teorema de Green / Gauss para obtener propiedades mec
   <strong>CivilBeam 2026</strong><br>
   Herramienta académica para el análisis y documentación de vigas.
 </p>
+## Capturas de la aplicación
+
+A continuación se presentan algunas vistas de CivilBeam 2026 durante el análisis de una viga:
+
+### Configuración del modelo
+En esta sección se ingresan los datos del proyecto, la geometría de la viga, los apoyos y las propiedades de la sección transversal.
+
+![Configuración de la viga](capturas/configuracion_viga.png)
+
+### Resultados y chequeo normativo
+La aplicación presenta las reacciones en los apoyos, los valores máximos de cortante y momento, la deflexión y el chequeo de esfuerzos.
+
+![Resultados y chequeo normativo](capturas/resultados_normativos.png)
+
+### Diagramas estructurales
+Se muestran el esquema estructural y los diagramas de cortante, momento flector y deformación.
+
+![Diagramas estructurales](capturas/diagramas_resultados.png)
+
+### Cálculo paso a paso
+Se presenta el desarrollo de los cálculos, con las fórmulas aplicadas, sustituciones numéricas y resultados de cada etapa. También permite exportar el desarrollo a Word.
+
+![Cálculo paso a paso](capturas/calculo_paso_a_paso.png)
+ssssss
