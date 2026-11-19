@@ -1,223 +1,230 @@
-# CivilBeam 2026 — Análisis Estructural de Vigas y Diagramas de Solicitaciones
+# CivilBeam 2026
 
-Aplicación de escritorio en Python (Flet Material 3) con núcleo numérico 100 % desacoplado de la interfaz gráfica para analizar vigas isostáticas, hiperestáticas y sobre apoyos elásticos bajo combinaciones normativas NSR-10, consultar el cálculo **paso a paso** y exportar memorias formales a **Microsoft Word (`.docx`)**.
+### Análisis estructural de vigas mediante el Método de Elementos Finitos 1D
 
----
+Aplicación de escritorio desarrollada en **Python y Flet Material 3** para analizar vigas isostáticas, hiperestáticas y sobre apoyos elásticos. Integra un núcleo numérico desacoplado de la interfaz gráfica, consulta del procedimiento de cálculo paso a paso y generación de memorias en Microsoft Word (`.docx`).
 
-## 1. Introducción
-
-**CivilBeam 2026** automatiza el análisis estructural lineal de vigas sometidas simultáneamente a múltiples tipos de apoyos, cargas transversales, cargas horizontales, momentos concentrados y acciones térmicas o reológicas.
-
-Sus capacidades principales son:
-- **Motor FEM 1D desacoplado (`app/modelo.py`):** Resuelve sistemas isostáticos e hiperestáticos mediante el Método de Elementos Finitos 1D sin requerir Flet ni ventanas gráficas, lo que permite importarlo y probarlo desde consola o scripts.
-- **5 tipos de apoyo estructural:** Simple/Móvil (`movil`), Articulado/Fijo (`fijo`), Empotrado rígido (`empotrado`), Empotramiento guiado/deslizante (`guiado`) y Apoyo elástico traslacional/rotacional (`elastico`).
-- **Cargas por geometría y por origen (NSR-10 Título B):** Puntuales ($P, P_x$), distribuidas uniformes, triangulares y trapezoidales, momentos concentrados ($M_0$), cargas no lineales/polinómicas ($w(u) = a_0 + a_1 u + a_2 u^2 + a_3 u^3$), peso propio automático ($\gamma \cdot A$) y efectos térmicos/reológicos ($\Delta T$ uniforme, gradiente térmico $\Delta T_g$, retracción y fluencia lenta $\varphi$).
-- **Revisión paso a paso y exportación a Word:** Pestaña interactiva **Paso a Paso** con fórmulas, sustituciones numéricas y extracción directa a `.docx` (`app/paso_a_paso.py`), además de memoria de cálculo automática basada en plantilla (`app/reporte.py`).
-- **Persistencia local en SQLite (`app/db.py`):** Historial de proyectos y cálculos con búsqueda, reapertura en formulario y comparación superpuesta de diagramas.
+> Proyecto académico desarrollado en **Programación II — Grupo 18, semestre 2026-III**, Universidad Distrital Francisco José de Caldas, Facultad Tecnológica.
 
 ---
 
-## 2. Background y Antecedentes
+## Contenido
 
-En el diseño y revisión de elementos horizontales de ingeniería civil (vigas de edificación, pasarelas peatonales, vigas de puente y vigas carril), la determinación exacta de la fuerza axial $N(x)$, fuerza cortante $V(x)$, momento flector $M(x)$, giro elástico $\theta(x)$ y flecha vertical $v(x)$ sustenta las verificaciones de resistencia y serviciabilidad exigidas por el reglamento **NSR-10 (Títulos B y C)** y la especificación **AISC 360-16**.
-
-Las calculadoras académicas clásicas suelen restringirse a casos canónicos aislados (viga simplemente apoyada con una carga puntual o distribuida uniforme) y no contemplan apoyos elásticos, empotramientos guiados, cargas polinómicas ni deformaciones impuestas por temperatura o retracción/fluencia lenta.
-
-Este proyecto surge en el curso **Programación II (Grupo 18, Semestre 2026-III)** de la **Universidad Distrital Francisco José de Caldas — Facultad Tecnológica**, integrando:
-- El módulo geométrico poligonal `sections.py` (*Teorema de Green / Gauss*) desarrollado por **Cristian Danilo Ramírez Vargas** ([@rvcristiand](https://github.com/rvcristiand)) en su proyecto de código abierto **[pymas](https://github.com/rvcristiand/pymas)**, adaptado y extendido en `app/secciones.py`.
-- Un solucionador matricial general por Elementos Finitos 1D con cuadratura de Gauss-Legendre.
-- Una arquitectura modular en capas que separa completamente el cálculo ingenieril, las gráficas vectorizadas, la base de datos SQLite, los reportes en Word y la interfaz gráfica de escritorio.
+- [Descripción general](#descripción-general)
+- [Funcionalidades](#funcionalidades)
+- [Tecnologías](#tecnologías)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Fundamentos de cálculo](#fundamentos-de-cálculo)
+- [Instalación](#instalación)
+- [Ejecución](#ejecución)
+- [Ejemplo de uso sin interfaz](#ejemplo-de-uso-sin-interfaz)
+- [Pruebas](#pruebas)
+- [Créditos y contribuciones](#créditos-y-contribuciones)
 
 ---
 
-## 3. Estructura del Código
+## Descripción general
+
+**CivilBeam 2026** permite modelar y analizar vigas sometidas a diferentes condiciones de apoyo y acciones estructurales. El programa calcula la respuesta de la estructura y presenta resultados como fuerza axial \(N(x)\), cortante \(V(x)\), momento flector \(M(x)\), giro \(\theta(x)\) y desplazamiento vertical \(v(x)\).
+
+El proyecto separa el motor de cálculo de la interfaz de usuario. Por esta razón, el módulo numérico puede utilizarse desde scripts o pruebas sin necesidad de iniciar Flet.
+
+## Funcionalidades
+
+| Módulo | Descripción |
+|---|---|
+| Análisis estructural | Solución de vigas isostáticas e hiperestáticas mediante FEM 1D. |
+| Condiciones de apoyo | Apoyos móvil, fijo, empotrado, guiado y elástico traslacional/rotacional. |
+| Casos de carga | Cargas puntuales, distribuidas uniformes, triangulares, trapezoidales y polinómicas; momentos concentrados y cargas horizontales. |
+| Acciones adicionales | Peso propio automático, variación térmica, retracción y fluencia lenta. |
+| Combinaciones | Combinaciones de servicio y `nsr_1` a `nsr_6`, asociadas a NSR-10 Título B. |
+| Visualización | Diagramas de fuerza axial, cortante, momento y desplazamiento. |
+| Cálculo explicado | Desglose del procedimiento con fórmulas y sustituciones numéricas. |
+| Informes | Generación de memorias de cálculo en formato Word (`.docx`). |
+| Historial | Almacenamiento local de proyectos y cálculos mediante SQLite. |
+
+## Tecnologías
+
+| Tecnología o biblioteca | Uso |
+|---|---|
+| Python | Lenguaje principal. |
+| Flet Material 3 | Interfaz gráfica de escritorio. |
+| NumPy y SciPy | Operaciones numéricas y soporte científico. |
+| Matplotlib | Generación de gráficas y diagramas. |
+| SQLite | Persistencia local de proyectos y cálculos. |
+| `docxtpl` y `python-docx` | Generación de documentos Word. |
+| pytest | Pruebas automatizadas. |
+
+Las versiones de las dependencias se encuentran especificadas en `requirements.txt`.
+
+## Estructura del proyecto
 
 ```text
-analisis_vigas/
-│
-├── main.py                        # Punto de entrada GUI (Flet + NavigationRail de 3 vistas)
-├── ejecutar_sin_interfaz.py       # Demostración headless sin Flet (cálculo + Word automático)
-├── ejecutar.bat                   # Lanzador automático en 1 clic para Windows (CMD)
-├── ejecutar.ps1                   # Lanzador alternativo para PowerShell
-├── requirements.txt               # Dependencias con versiones fijadas
-├── .gitignore                     # Exclusiones (.venv, __pycache__, datos/*.db, reportes/, *.png)
-├── README.md                      # Documentación del proyecto
+CivilBeam-2026/
+├── main.py                       # Punto de entrada de la aplicación
+├── ejecutar_sin_interfaz.py      # Demostración del motor sin interfaz gráfica
+├── ejecutar.bat                 # Lanzador para Windows
+├── ejecutar.ps1                 # Lanzador alternativo para PowerShell
+├── requirements.txt             # Dependencias del proyecto
+├── README.md                     # Documentación
 │
 ├── app/
-│   ├── __init__.py
-│   ├── modelo.py                  # Motor FEM 1D (VigaIsostatica, Apoyo, cargas, combinaciones NSR-10)
-│   ├── sections.py                # Motor geométrico poligonal de pymas (rvcristiand, Teorema de Green)
-│   ├── secciones.py               # Adaptadores de secciones (Rectangular, PerfilI, Bulb-Tee)
-│   ├── paso_a_paso.py             # Desglose explicativo en 6 pasos y exportador Word paso a paso
-│   ├── reporte.py                 # Generador de memoria Word oficial con docxtpl
-│   ├── graficas.py                # Gráficas técnicas de 4 paneles y comparativas (Matplotlib)
-│   ├── db.py                      # Persistencia relacional SQLite (tablas proyectos y calculos)
-│   │
-│   └── ui/                        # Capa de interfaz gráfica (Flet Material 3)
-│       ├── __init__.py
-│       ├── calculo_view.py        # Pestaña "Cálculo": apoyos, cargas, sección y diagramas
-│       ├── paso_a_paso_view.py    # Pestaña "Paso a Paso": revisión de ecuaciones y botón a Word
-│       └── historial_view.py      # Pestaña "Historial BD": consulta, reapertura y comparación
+│   ├── modelo.py                # Motor de análisis FEM 1D
+│   ├── sections.py              # Motor geométrico poligonal
+│   ├── secciones.py             # Adaptadores y tipos de sección
+│   ├── paso_a_paso.py           # Desarrollo del cálculo y exportación
+│   ├── reporte.py               # Generación de memorias Word
+│   ├── graficas.py              # Diagramas y comparativas
+│   ├── db.py                    # Persistencia SQLite
+│   └── ui/                      # Interfaz gráfica
+│       ├── calculo_view.py
+│       ├── paso_a_paso_view.py
+│       └── historial_view.py
 │
 ├── plantillas/
-│   └── memoria.docx               # Plantilla Word institucional con etiquetas Jinja2
-│
+│   └── memoria.docx             # Plantilla de memoria de cálculo
 ├── herramientas/
-│   └── crear_plantilla.py         # Script generador de plantillas/memoria.docx
-│
+│   └── crear_plantilla.py       # Generación de la plantilla Word
 ├── ejemplos/
-│   └── memoria_ejemplo.docx       # Ejemplo de memoria Word generada
-│
+│   └── memoria_ejemplo.docx     # Ejemplo de memoria generada
 └── tests/
-    ├── __init__.py
-    └── test_modelo.py             # Suite de 11 pruebas unitarias pytest (analíticas + BD + Word)
+    └── test_modelo.py           # Pruebas automatizadas
 ```
 
----
+## Fundamentos de cálculo
 
-## 4. Cómo Funciona / Marco Matemático
+### Propiedades geométricas de la sección
 
-### 4.1 Propiedades Geométricas por Teorema de Green (`app/sections.py` y `app/secciones.py`)
-Cada sección transversal (rectangular, perfil I de 12 vértices o viga puente *Bulb-Tee*) se representa como un polígono cerrado en 2D y sus propiedades se obtienen mediante la fórmula del agrimensor de Gauss:
+Las propiedades geométricas de las secciones poligonales se calculan mediante el Teorema de Green o fórmula de Gauss. Para el área:
 
-$$A = \frac{1}{2} \sum_{i=0}^{n-1} (x_i y_{i+1} - x_{i+1} y_i), \qquad I_x = \frac{1}{12} \sum_{i=0}^{n-1} (y_i^2 + y_i y_{i+1} + y_{i+1}^2)(x_i y_{i+1} - x_{i+1} y_i) - A\bar{y}^2$$
+\[
+A = \frac{1}{2}\sum_{i=0}^{n-1}(x_i y_{i+1}-x_{i+1}y_i)
+\]
 
-El módulo resistente es $W_{\text{mín}} = I_x / c_{\text{máx}}$, y el peso propio distribuido se calcula automáticamente cuando está activo como $w_{pp} = \gamma \cdot A$.
+El módulo resistente se determina a partir del momento de inercia y la distancia máxima al eje neutro:
 
-### 4.2 Módulo Efectivo por Fluencia Lenta y Acciones Térmicas
-Para considerar fluencia lenta del material ($\varphi \ge 0$), el módulo de elasticidad longitudinal se ajusta a:
+\[
+W_{\min}=\frac{I_x}{c_{\max}}
+\]
 
-$$E_{\text{eff}} = \frac{E}{1 + \varphi}$$
+Cuando se activa el peso propio, este se obtiene a partir del peso específico del material y el área de la sección.
 
-Las acciones térmicas y de retracción se incorporan como deformaciones iniciales equivalentes factorizadas según la combinación de carga activa ($f_T$):
+### Formulación por elementos finitos
 
-$$\varepsilon_0 = f_T \left(\alpha_T \Delta T_{\text{unif}} - \varepsilon_{\text{retrac}}\right), \qquad \kappa_T = \frac{f_T \, \alpha_T \, \Delta T_{\text{grad}}}{h}$$
+La viga se discretiza mediante una malla adaptativa. Cada nodo contempla tres grados de libertad: desplazamiento axial \(u\), desplazamiento transversal \(v\) y giro \(\theta\).
 
-### 4.3 Formulación por Elementos Finitos 1D (`app/modelo.py`)
-La viga de longitud $L$ se discretiza en una malla adaptativa ($N_{\text{base}} = 201$ nodos enriquecida exactamente en todas las abscisas de apoyos y puntos de aplicación/inicio/fin de cargas). Cada nodo posee **3 grados de libertad**: desplazamiento axial $u$, deflexión transversal $v$ y giro $\theta$.
+- **Flexión de Euler-Bernoulli:** utiliza funciones cúbicas de Hermite.
+- **Comportamiento axial:** se formula mediante elementos de barra unidimensionales.
+- **Cargas distribuidas:** se integran mediante cuadratura de Gauss-Legendre de cuatro puntos.
+- **Apoyos elásticos:** sus rigideces se incorporan al sistema global de ecuaciones.
 
-- **Flexión de Euler-Bernoulli ($v, \theta$) con funciones cúbicas de Hermite:**
-  $$EI \frac{d^4 v}{dx^4} = -q(x), \qquad [K_b^e]\{d_b^e\} = \{F_b^e\}$$
-- **Barra axial 1D desacoplada ($u$):**
-  $$EA \frac{d^2 u}{dx^2} = -q_x(x)$$
-- **Integración exacta de cargas distribuidas y polinómicas:** Las fuerzas nodales consistentes para cargas uniformes, triangulares, trapezoidales y polinómicas $w(u) = a_0 + a_1 u + a_2 u^2 + a_3 u^3$ se evalúan mediante **cuadratura de Gauss-Legendre de 4 puntos**.
-- **Condiciones de apoyo y resortes:** Los grados de libertad restringidos se imponen en el sistema global $K \cdot U = F$, sumando directamente las rigideces elásticas ($k_y, k_\theta, k_x$) en la diagonal de $K$ y recuperando reacciones exactas mediante $R = K_{\text{orig}} U - F_{\text{nodal}}$.
+La solución del sistema estructural se expresa como:
 
-### 4.4 Combinaciones de Carga y Chequeo Normativo (NSR-10)
-Se soportan las combinaciones `servicio` y `nsr_1` a `nsr_6` (NSR-10 B.2.4-1 a B.2.4-6) aplicadas por origen (`D`, `L`, `W`, `E`, `S`, `T`), verificando al final:
+\[
+[K]\{U\}=\{F\}
+\]
 
-$$\sigma_{\text{máx}} = \frac{|M|_{\text{máx}} \cdot c}{I_x} + \frac{|N|_{\text{máx}}}{A} \le \sigma_{\text{adm}}, \qquad |\delta|_{\text{máx}} \le \frac{L}{k} \quad (k \in \{180, 240, 360, 480\})$$
+### Acciones térmicas y fluencia
 
----
+Para considerar la fluencia lenta, el módulo de elasticidad efectivo se ajusta mediante:
 
-## 5. Instalación Paso a Paso
+\[
+E_{\mathrm{eff}}=\frac{E}{1+\varphi}
+\]
 
-### Requisitos previos
-- **Python 3.10 o superior** (al instalar en Windows, asegurarse de marcar la casilla *"Add python.exe to PATH"*).
-- **Git instalado en el sistema:** Si el computador es totalmente nuevo o nunca se ha usado para programar, `git clone` fallará si no está instalado. Para instalarlo según tu sistema operativo:
-  - **Windows:**
-    - Opción A (recomendada por consola): abrir PowerShell y ejecutar:
-      ```powershell
-      winget install --id Git.Git -e
-      ```
-    - Opción B (instalador gráfico): descargar e instalar desde el sitio oficial [git-scm.com/download/win](https://git-scm.com/download/win).
-  - **Linux (Ubuntu / Debian / Mint):**
-    ```bash
-    sudo apt update && sudo apt install -y git
-    ```
-  - **Linux (Fedora / RHEL):**
-    ```bash
-    sudo dnf install -y git
-    ```
-  - **Linux (Arch / Manjaro):**
-    ```bash
-    sudo pacman -S git
-    ```
-  - **macOS:**
-    ```bash
-    xcode-select --install
-    # o mediante Homebrew:
-    brew install git
-    ```
-- Conexión a Internet la primera vez para descargar las librerías de `requirements.txt`.
+El modelo también contempla deformaciones iniciales asociadas a variaciones térmicas, retracción y fluencia lenta, de acuerdo con los parámetros definidos en el proyecto.
 
-### Pasos de instalación (terminal / consola)
+### Combinaciones y verificaciones
 
-1. **Clonar el repositorio:**
-   ```bash
-   git clone https://github.com/Johan17Ayala/CivilBeam-2026.git
-   cd CivilBeam-2026
-   ```
+El programa contempla combinaciones de servicio y las combinaciones `nsr_1` a `nsr_6`, relacionadas con NSR-10, Título B. También presenta verificaciones de esfuerzo y desplazamiento según los parámetros definidos para el análisis.
 
-2. **Crear el entorno virtual `.venv`:**
-   - En **Windows (PowerShell / CMD)**:
-     ```powershell
-     python -m venv .venv
-     ```
-   - En **Linux / macOS**:
-     ```bash
-     python3 -m venv .venv
-     ```
+> **Nota:** los resultados del programa deben interpretarse y verificarse dentro del alcance del modelo y de los criterios normativos aplicables al proyecto.
 
-3. **Activar el entorno virtual:**
-   - En **PowerShell (Windows)**:
-     ```powershell
-     .\.venv\Scripts\Activate.ps1
-     ```
-   - En **CMD (Windows)**:
-     ```bat
-     .venv\Scripts\activate.bat
-     ```
-   - En **Linux / macOS**:
-     ```bash
-     source .venv/bin/activate
-     ```
+## Instalación
 
-4. **Instalar dependencias:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Requisitos
 
-5. **Verificar la instalación ejecutando las pruebas unitarias:**
-   - En **Windows**:
-     ```powershell
-     python -m pytest -v
-     ```
-   - En **Linux / macOS**:
-     ```bash
-     python3 -m pytest -v
-     ```
-   *(Debe reportar `11 passed`).*
+- Python 3.10 o superior.
+- Git.
+- Conexión a Internet para instalar las dependencias.
 
-   > **¿Por qué `python -m pytest -v` en lugar de solo `pytest -v`?**  
-   > En sistemas Windows o instalaciones limpias, ejecutar solo `pytest -v` puede arrojar el error:  
-   > `El término 'pytest' no se reconoce como nombre de un cmdlet, función o programa ejecutable...`  
-   > Esto ocurre porque la carpeta de ejecutables locales (`.venv\Scripts` en Windows o `.venv/bin` en Linux) no siempre se registra en el `PATH` del sistema, o porque las directivas de seguridad de PowerShell restringen la llamada directa a scripts ejecutables (`.exe`/`.ps1`).  
-   > Al usar **`python -m pytest -v`** (o `python3 -m pytest -v`), se invoca el módulo de pruebas directamente desde el intérprete de Python, lo que funciona de manera idéntica y 100 % garantizada en **Windows, Linux y macOS**.
+### 1. Clonar el repositorio
 
-6. **Ejecutar la aplicación gráfica:**
-   - En **Windows**:
-     ```powershell
-     python main.py
-     ```
-   - En **Linux / macOS**:
-     ```bash
-     python3 main.py
-     ```
-   *Atajo en Windows:* también puedes hacer doble clic en `ejecutar.bat` (crea `.venv`, instala `requirements.txt` si falta y abre la ventana automáticamente).
+```bash
+git clone https://github.com/Johan17Ayala/CivilBeam-2026.git
+cd CivilBeam-2026
+```
 
----
+### 2. Crear un entorno virtual
 
-## 6. Uso con un Ejemplo Básico
+**Windows (PowerShell):**
 
-### Opción A — Uso en la aplicación de escritorio (`python main.py`)
-1. En la pestaña **Cálculo**, define la longitud $L$ (por ejemplo `6.0 m`), selecciona la sección transversal y los apoyos (por ejemplo, fijo en $x = 0\text{ m}$ y móvil en $x = 6\text{ m}$).
-2. Agrega una o varias cargas (puntuales, distribuidas uniformes/trapezoidales/polinómicas o momentos) con su origen (`D`, `L`, `W`, `E`, `S`, `T`) y presiona **CALCULAR VIGA**.
-3. Revisa los diagramas de $N(x)$, $V(x)$, $M(x)$ y $\delta(x)$.
-4. Abre la pestaña **Paso a Paso** (o pulsa **Ver Cálculo Paso a Paso**) para inspeccionar los 6 pasos detallados y presiona **Extraer Paso a Paso a Word (.docx)** para guardar el documento en `reportes/`.
+```powershell
+python -m venv .venv
+```
 
-### Opción B — Uso sin interfaz gráfica (módulo independiente en Python)
-El repositorio incluye el script `ejecutar_sin_interfaz.py` como demostración directa de uso headless:
+**Linux o macOS:**
+
+```bash
+python3 -m venv .venv
+```
+
+### 3. Activar el entorno virtual
+
+**Windows (PowerShell):**
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+**Windows (CMD):**
+
+```bat
+.venv\Scripts\activate.bat
+```
+
+**Linux o macOS:**
+
+```bash
+source .venv/bin/activate
+```
+
+### 4. Instalar las dependencias
+
+```bash
+pip install -r requirements.txt
+```
+
+## Ejecución
+
+Para iniciar la aplicación gráfica:
+
+```bash
+python main.py
+```
+
+En Linux o macOS, si el comando `python` no está disponible, utiliza:
+
+```bash
+python3 main.py
+```
+
+En Windows también se puede utilizar el lanzador `ejecutar.bat`.
+
+### Recorrido general de la aplicación
+
+1. En la vista **Cálculo**, define la longitud, la sección transversal y las condiciones de apoyo.
+2. Agrega las cargas y especifica su origen.
+3. Ejecuta el análisis.
+4. Consulta los diagramas de respuesta estructural.
+5. Accede a **Paso a Paso** para revisar el procedimiento y exportarlo a Word.
+6. Utiliza **Historial** para consultar cálculos almacenados, reabrir proyectos y comparar diagramas.
+
+## Ejemplo de uso sin interfaz
+
+El motor de análisis puede utilizarse desde Python sin iniciar la aplicación gráfica. El repositorio incluye `ejecutar_sin_interfaz.py` como demostración.
+
+También es posible importar las funciones principales:
 
 ```python
 from app.modelo import analizar_viga_desde_diccionario
@@ -235,57 +242,111 @@ config = {
     "limite_k": 360,
     "incluir_peso_propio": True,
     "combinacion": "nsr_2",
-    "seccion": {"tipo": "rectangular", "parametros": {"base": 0.30, "altura": 0.60}},
+    "seccion": {
+        "tipo": "rectangular",
+        "parametros": {"base": 0.30, "altura": 0.60},
+    },
     "cargas": [
-        {"tipo": "distribuida", "w1": 18.0, "w2": 18.0, "x1": 0.0, "x2": 8.0, "origen": "D"},
-        {"tipo": "puntual", "P": 35.0, "Px": 10.0, "x": 4.0, "origen": "L"},
+        {
+            "tipo": "distribuida",
+            "w1": 18.0,
+            "w2": 18.0,
+            "x1": 0.0,
+            "x2": 8.0,
+            "origen": "D",
+        },
+        {
+            "tipo": "puntual",
+            "P": 35.0,
+            "Px": 10.0,
+            "x": 4.0,
+            "origen": "L",
+        },
     ],
 }
 
 viga, resultado = analizar_viga_desde_diccionario(config)
 pasos = generar_pasos_calculo(viga, resultado)
-print(f"|V| máx = {resultado.V_abs_max:.2f} kN | |M| máx = {resultado.M_abs_max:.2f} kN·m")
-generar_word_paso_a_paso(viga, resultado, "Proyecto Demo", "Viga V-101", "Ing. Civil")
+
+print(f"|V| máx = {resultado.V_abs_max:.2f} kN")
+print(f"|M| máx = {resultado.M_abs_max:.2f} kN·m")
+
+generar_word_paso_a_paso(
+    viga,
+    resultado,
+    "Proyecto Demo",
+    "Viga V-101",
+    "Ing. Civil",
+)
 ```
 
-También puedes correr directamente desde consola:
-```powershell
-python ejecutar_sin_interfaz.py
+## Pruebas
+
+El proyecto incluye pruebas automatizadas en `tests/`.
+
+Para ejecutarlas:
+
+```bash
+python -m pytest -v
 ```
 
----
+En Linux o macOS también puede utilizarse:
 
-## 7. Dependencias
+```bash
+python3 -m pytest -v
+```
 
-Listado fijado en `requirements.txt`:
+La documentación original del proyecto indica una suite de 11 pruebas. El resultado debe comprobarse ejecutando las pruebas en el entorno local.
 
-| Paquete | Versión | Uso en el proyecto |
-| :--- | :--- | :--- |
-| `flet` | `1.0.5` | Interfaz gráfica de escritorio Material 3 |
-| `flet-desktop` | `1.0.5` | Runtime nativo de ventana desktop para Flet |
-| `numpy` | `2.5.4` | Álgebra lineal FEM 1D, mallas adaptativas y cuadratura de Gauss-Legendre |
-| `scipy` | `1.18.1` | Soporte científico y utilidades numéricas |
-| `matplotlib` | `3.11.2` | Generación de diagramas $V(x), M(x), \theta(x), v(x)$ y comparativas |
-| `docxtpl` | `0.20.2` | Rellenado de plantilla Word institucional (`plantillas/memoria.docx`) |
-| `python-docx` | `1.2.0` | Construcción directa del documento Word paso a paso (`app/paso_a_paso.py`) |
-| `pytest` | `9.2.0` | Ejecución de pruebas unitarias automatizadas (`tests/test_modelo.py`) |
+## Créditos y contribuciones
 
-Además se utiliza `sqlite3` de la biblioteca estándar de Python para la base de datos local (`datos/vigas.db`).
+**Universidad Distrital Francisco José de Caldas**  
+Facultad Tecnológica — Proyecto Curricular de Ingeniería Civil  
+Programación II, Grupo 18, semestre 2026-III.
 
----
+- **Propietario del repositorio:** [@Johan17Ayala](https://github.com/Johan17Ayala) — Johan Ayala.
+- **Colaborador:** [@herrerita1414](https://github.com/herrerita1414).
 
-## 8. Créditos y Contribuciones
+### Atribución de proyectos base
 
-- **Universidad Distrital Francisco José de Caldas** — Facultad Tecnológica, Proyecto Curricular de Ingeniería Civil (*Programación II*, Grupo 18, Semestre 2026-III).
-- **Autor / Propietario del repositorio:** [@Johan17Ayala](https://github.com/Johan17Ayala) (Johan Ayala)
-- **Colaborador del proyecto:** [@herrerita1414](https://github.com/herrerita1414)
+El módulo geométrico `app/sections.py` se basa en el proyecto [pymas](https://github.com/rvcristiand/pymas), desarrollado por **Cristian Danilo Ramírez Vargas** ([@rvcristiand](https://github.com/rvcristiand)).
 
-### Agradecimiento y atribución de proyectos base
-- **[pymas](https://github.com/rvcristiand/pymas)** (*Python Matrix Analysis of Structures*), desarrollado por **Cristian Danilo Ramírez Vargas** ([@rvcristiand](https://github.com/rvcristiand)):
-  - El módulo `app/sections.py` fue extraído e integrado a partir de este proyecto de código abierto (bajo licencia GNU GPL v3).
-  - Provee la base de cálculo de propiedades mecánicas poligonales en 2D aplicando el Teorema de Green / Gauss, la cual fue adaptada y extendida en `app/secciones.py` con clases especializadas para perfiles estructurales I (`PerfilI`) y adaptadores para la interfaz Flet.
+Este componente utiliza el Teorema de Green / Gauss para obtener propiedades mecánicas de secciones poligonales y se integra con adaptaciones en `app/secciones.py`. El proyecto base se distribuye bajo licencia GNU GPL v3.
 
 ### Cómo contribuir
-1. Clona el repositorio (`git clone https://github.com/Johan17Ayala/CivilBeam-2026.git`) o crea una rama descriptiva (`git checkout -b feature/nueva-mejora`).
-2. Realiza tus cambios manteniendo la separación entre el núcleo numérico (`app/modelo.py`, `app/paso_a_paso.py`) y la capa UI (`app/ui/`).
-3. Ejecuta `python -m pytest -v` (o `python3 -m pytest -v` en Linux/macOS) y verifica que las 11 pruebas unitarias pasen antes de hacer `commit` y `push`.
+
+1. Crea una rama descriptiva para tu aporte.
+2. Realiza cambios procurando mantener la separación entre el núcleo numérico y la interfaz gráfica.
+3. Ejecuta las pruebas con `python -m pytest -v`.
+4. Registra los cambios mediante commits claros y descriptivos.
+5. Envía tus contribuciones mediante un Pull Request.
+
+---
+
+<p align="center">
+  <strong>CivilBeam 2026</strong><br>
+  Herramienta académica para el análisis y documentación de vigas.
+</p>
+## Capturas de la aplicación
+
+A continuación se presentan algunas vistas de CivilBeam 2026 durante el análisis de una viga:
+
+### Configuración del modelo
+En esta sección se ingresan los datos del proyecto, la geometría de la viga, los apoyos y las propiedades de la sección transversal.
+
+![Configuración de la viga](capturas/configuracion_viga.png)
+
+### Resultados y chequeo normativo
+La aplicación presenta las reacciones en los apoyos, los valores máximos de cortante y momento, la deflexión y el chequeo de esfuerzos.
+
+![Resultados y chequeo normativo](capturas/resultados_normativos.png)
+
+### Diagramas estructurales
+Se muestran el esquema estructural y los diagramas de cortante, momento flector y deformación.
+
+![Diagramas estructurales](capturas/diagramas_resultados.png)
+
+### Cálculo paso a paso
+Se presenta el desarrollo de los cálculos, con las fórmulas aplicadas, sustituciones numéricas y resultados de cada etapa. También permite exportar el desarrollo a Word.
+
+![Cálculo paso a paso](capturas/calculo_paso_a_paso.png)
