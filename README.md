@@ -350,4 +350,3 @@ Se muestran el esquema estructural y los diagramas de cortante, momento flector 
 Se presenta el desarrollo de los cálculos, con las fórmulas aplicadas, sustituciones numéricas y resultados de cada etapa. También permite exportar el desarrollo a Word.
 
 ![Cálculo paso a paso](capturas/calculo_paso_a_paso.png)
-ssssss
