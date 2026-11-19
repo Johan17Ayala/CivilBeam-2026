@@ -18,6 +18,7 @@ datos/*.db
 # Reportes y salidas temporales generadas
 reportes/
 *.png
+!plantillas/escudo_ud.png
 *.pdf
 
 # Archivos de sistema / IDE
